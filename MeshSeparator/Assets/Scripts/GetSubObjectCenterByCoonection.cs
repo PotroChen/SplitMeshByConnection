@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
-public class MeshSplit : MonoBehaviour {
-
+public class GetSubObjectCenterByCoonection : MonoBehaviour {
     #region PUBLIC_VARIABLES
     public static List<int> allIndices = new List<int>();
     public static List<int> newIndices = new List<int>();
@@ -15,7 +14,7 @@ public class MeshSplit : MonoBehaviour {
     #endregion
 
     #region PUBLIC_FUNCTION
-    [MenuItem("SeparateMesh/SplitMeshByConnection")]
+    [MenuItem("SeparateMesh/GetSubObjectCenterByCoonection")]
     public static void SplitMeshMenu()
     {
         GameObject[] targetObjGroup = Selection.gameObjects;
@@ -78,22 +77,17 @@ public class MeshSplit : MonoBehaviour {
             //2.通过tempIndice对verts的映射，将顶点加入新的数组newVerts
             //3.newIndices所有元素减去tempIndice[0]也就是全部矫正归零（newIndices索引归零）
             //4.算出newVerts的算出newVerts中所有的点的平均值，再将verts所有值减去这个值（verts原点归零）
-            
+
             List<int> tempIndices = new List<int>();
             foreach (int index in newIndices)
             {
                 if (!tempIndices.Contains(index))
                     tempIndices.Add(index);
             }
-            tempIndices.Sort();
             Vector3[] newVerts = new Vector3[tempIndices.Count];
             for (int i = 0; i < tempIndices.Count; i++)
             {
                 newVerts[i] = verts[tempIndices[i]];
-            }
-            for (int i = 0; i < newIndices.Count; i++)
-            {
-                newIndices[i] = newIndices[i] - tempIndices[0];
             }
             Vector3 sum = Vector3.zero;
             foreach (Vector3 item in newVerts)
@@ -101,27 +95,37 @@ public class MeshSplit : MonoBehaviour {
                 sum += item;
             }
             Vector3 avg = sum / newVerts.Length;
-            for (int i = 0; i < newVerts.Length; i++)
-            {
-                newVerts[i] = newVerts[i] - avg;
-            }
-            Debug.Log("Center" + avg);
-            Mesh newMesh = new Mesh();
-            newMesh.vertices = newVerts;
-            newMesh.triangles = newIndices.ToArray();
-            newMesh.RecalculateNormals();
-            
-            /*
-            Mesh newMesh = new Mesh();
-            newMesh.vertices = verts;
-            newMesh.triangles = newIndices.ToArray();
-            newMesh.RecalculateNormals();
-            */
+            Debug.Log(avg);
+            //tempIndices.Sort();
+            //Vector3[] newVerts = new Vector3[tempIndices.Count];
+            //for (int i = 0; i < tempIndices.Count; i++)
+            //{
+            //    newVerts[i] = verts[tempIndices[i]];
+            //}
+            //for (int i = 0; i < newIndices.Count; i++)
+            //{
+            //    newIndices[i] = newIndices[i] - tempIndices[0];
+            //}
+            //Vector3 sum = Vector3.zero;
+            //foreach (Vector3 item in newVerts)
+            //{
+            //    sum += item;
+            //}
+            //Vector3 avg = sum / newVerts.Length;
+            //for (int i = 0; i < newVerts.Length; i++)
+            //{
+            //    newVerts[i] = newVerts[i] - avg;
+            //}
 
-            GameObject newGameObject = new GameObject("newGameObject");
-            newGameObject.transform.position = avg;
-            newGameObject.AddComponent<MeshRenderer>().material = meshRenderer.sharedMaterial;
-            newGameObject.AddComponent<MeshFilter>().mesh = newMesh;
+            //Mesh newMesh = new Mesh();
+            //newMesh.vertices = newVerts;
+            //newMesh.triangles = newIndices.ToArray();
+            //newMesh.RecalculateNormals();
+
+            //GameObject newGameObject = new GameObject("newGameObject");
+            //newGameObject.transform.localPosition = avg;
+            //newGameObject.AddComponent<MeshRenderer>().material = meshRenderer.sharedMaterial;
+            //newGameObject.AddComponent<MeshFilter>().mesh = newMesh;
         }
         //DestroyImmediate(meshRenderer.gameObject);
     }
