@@ -110,13 +110,6 @@ public class MeshSplit : MonoBehaviour {
             newMesh.vertices = newVerts;
             newMesh.triangles = newIndices.ToArray();
             newMesh.RecalculateNormals();
-            
-            /*
-            Mesh newMesh = new Mesh();
-            newMesh.vertices = verts;
-            newMesh.triangles = newIndices.ToArray();
-            newMesh.RecalculateNormals();
-            */
 
             GameObject newGameObject = new GameObject("newGameObject");
             newGameObject.transform.position = avg;
