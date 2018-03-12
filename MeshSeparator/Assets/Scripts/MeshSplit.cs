@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class MeshSplit : MonoBehaviour {
+public class MeshSplit : MonoBehaviour
+{
 
     #region PUBLIC_VARIABLES
     public static List<int> allIndices = new List<int>();
@@ -66,6 +67,9 @@ public class MeshSplit : MonoBehaviour {
                     restIndices.Add(allIndices[n]);
                 }
             }
+
+            //Debug.Log(restIndices.Count + " " + allIndices.Count +" "+newIndices.Count);
+
             allIndices.Clear();
             for (int i = 0; i < restIndices.Count; i++)
             {
@@ -78,45 +82,58 @@ public class MeshSplit : MonoBehaviour {
             //2.通过tempIndice对verts的映射，将顶点加入新的数组newVerts
             //3.newIndices所有元素减去tempIndice[0]也就是全部矫正归零（newIndices索引归零）
             //4.算出newVerts的算出newVerts中所有的点的平均值，再将verts所有值减去这个值（verts原点归零）
-            
-            List<int> tempIndices = new List<int>();
-            foreach (int index in newIndices)
+
+            List<int> verIndMap = new List<int>();
+
+            foreach (int index in newIndices)//去重复
             {
-                if (!tempIndices.Contains(index))
-                    tempIndices.Add(index);
+                if (!verIndMap.Contains(index))
+                    verIndMap.Add(index);
             }
-            tempIndices.Sort();
-            Vector3[] newVerts = new Vector3[tempIndices.Count];
-            for (int i = 0; i < tempIndices.Count; i++)
+
+            verIndMap.Sort();//排序
+            Vector3[] resVerts = new Vector3[verIndMap.Count];
+            int[] resIndices = new int[newIndices.Count];
+
+            for (int i = 0; i < verIndMap.Count; i++)
             {
-                newVerts[i] = verts[tempIndices[i]];
+                resVerts[i] = verts[verIndMap[i]];
             }
+
             for (int i = 0; i < newIndices.Count; i++)
             {
-                newIndices[i] = newIndices[i] - tempIndices[0];
+                for (int j = 0; j < verIndMap.Count; j++)
+                {
+                    if (newIndices[i] == verIndMap[j])
+                        resIndices[i] = j;
+                }
+
             }
+
             Vector3 sum = Vector3.zero;
-            foreach (Vector3 item in newVerts)
-            {
+            foreach (Vector3 item in resVerts)
                 sum += item;
-            }
-            Vector3 avg = sum / newVerts.Length;
-            for (int i = 0; i < newVerts.Length; i++)
+
+            Vector3 avg = sum / resVerts.Length;
+            for (int i = 0; i < resVerts.Length; i++)
             {
-                newVerts[i] = newVerts[i] - avg;
+                resVerts[i] = resVerts[i] - avg;
             }
-            Debug.Log("Center" + avg);
+            if (resVerts.Length < 4)
+            {
+                Debug.Log("此区块只有4个点，无法形成模型,故舍弃");
+                continue;
+            }
             Mesh newMesh = new Mesh();
-            newMesh.vertices = newVerts;
-            newMesh.triangles = newIndices.ToArray();
+            newMesh.vertices = resVerts;
+            newMesh.triangles = resIndices;
             newMesh.RecalculateNormals();
 
             GameObject newGameObject = new GameObject("newGameObject");
-            newGameObject.transform.position = avg;
+            newGameObject.transform.position = avg + meshRenderer.transform.position;
             newGameObject.AddComponent<MeshRenderer>().material = meshRenderer.sharedMaterial;
             newGameObject.AddComponent<MeshFilter>().mesh = newMesh;
         }
-        //DestroyImmediate(meshRenderer.gameObject);
     }
     #endregion
 }
