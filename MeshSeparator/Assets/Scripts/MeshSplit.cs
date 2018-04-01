@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class MeshSplit : MonoBehaviour {
+public class MeshSplit : MonoBehaviour
+{
 
     #region PUBLIC_VARIABLES
     public static List<int> allIndices = new List<int>();
@@ -74,7 +75,6 @@ public class MeshSplit : MonoBehaviour {
                 allIndices.Add(restIndices[i]);
             }
 
-
             //newIndices为分离出来的mesh的顶点索引信息，每三个值代表着一个三角面之间的关系，每个值代表着顶点在verts中的位置。
             //注：这时，我们不能将它直接作为索引信息数组赋给新的mesh中，因为它的值为代表着顶点在verts中的位置，而不是splitedVerts。
 
@@ -133,7 +133,7 @@ public class MeshSplit : MonoBehaviour {
             newMesh.RecalculateNormals();
 
             GameObject newGameObject = new GameObject("newGameObject");
-            newGameObject.transform.position = avg;
+            newGameObject.transform.position = avg + meshRenderer.transform.position;
             newGameObject.AddComponent<MeshRenderer>().material = meshRenderer.sharedMaterial;
             newGameObject.AddComponent<MeshFilter>().mesh = newMesh;
         }
