@@ -29,12 +29,10 @@ public class MeshSplit : MonoBehaviour {
     #region PRIVATE_FUNCTION
     private static void SplitMesh(MeshRenderer meshRenderer, Mesh mesh)
     {
-        //int nameIndex = 0;//新生成物体的序列号name_index
-        //string filePath;
         int[] indices = mesh.triangles;
         Vector3[] verts = mesh.vertices;
 
-        //list all indices
+        //allIndices和restIndices初始化赋值
         for (int i = 0; i < indices.Length; i++)
         {
             allIndices.Add(indices[i]);
@@ -43,13 +41,16 @@ public class MeshSplit : MonoBehaviour {
         while (restIndices.Count > 0)
         {
             newIndices.Clear();
-            //Get first triangle
+            //得到第一个三角形
             for (int i = 0; i < 3; i++)
             {
                 newIndices.Add(restIndices[i]);
             }
+
+            //遍历剩下的三角形
             for (int i = 1; i < restIndices.Count / 3; i++)
             {
+                //判断该三角形与newIndices是否有共用的顶点，若有，就该三角形的所有顶点加入newIndices
                 if (newIndices.Contains(restIndices[(i * 3) + 0]) || newIndices.Contains(restIndices[(i * 3) + 1]) || newIndices.Contains(restIndices[(i * 3) + 2]))
                 {
                     for (int q = 0; q < 3; q++)
@@ -66,49 +67,69 @@ public class MeshSplit : MonoBehaviour {
                     restIndices.Add(allIndices[n]);
                 }
             }
+
             allIndices.Clear();
             for (int i = 0; i < restIndices.Count; i++)
             {
                 allIndices.Add(restIndices[i]);
             }
 
-            //mesh.triangles = restIndices.ToArray();
 
-            //1.创建新数组tempIndice，将newIndices去重复，并从小到大排序的结果填入
-            //2.通过tempIndice对verts的映射，将顶点加入新的数组newVerts
-            //3.newIndices所有元素减去tempIndice[0]也就是全部矫正归零（newIndices索引归零）
-            //4.算出newVerts的算出newVerts中所有的点的平均值，再将verts所有值减去这个值（verts原点归零）
-            
-            List<int> tempIndices = new List<int>();
-            foreach (int index in newIndices)
+            //newIndices为分离出来的mesh的顶点索引信息，每三个值代表着一个三角面之间的关系，每个值代表着顶点在verts中的位置。
+            //注：这时，我们不能将它直接作为索引信息数组赋给新的mesh中，因为它的值为代表着顶点在verts中的位置，而不是splitedVerts。
+
+            //1.创建新数组verIndMap，将newIndices去重复，并从小到大排序的结果填入
+            // 注：此时，处理完verIndMap为splitedVerts与verts之间的映射表，顶点splitedVerts[i]就对应着verts[verIndMap[i]]
+            List<int> verIndMap = new List<int>();
+
+            foreach (int index in newIndices)//去重复
             {
-                if (!tempIndices.Contains(index))
-                    tempIndices.Add(index);
+                if (!verIndMap.Contains(index))
+                    verIndMap.Add(index);
             }
-            tempIndices.Sort();
-            Vector3[] newVerts = new Vector3[tempIndices.Count];
-            for (int i = 0; i < tempIndices.Count; i++)
+
+            verIndMap.Sort();//排序
+
+            //2.我们要创建splitedVerts(分离出来的顶点的数组)
+            Vector3[] splitedVerts = new Vector3[verIndMap.Count];
+            //有了verIndMap的帮助，我们可以遍历verIndMap将Verts中我们所需要的顶点信息加入splitedVerts中
+            for (int i = 0; i < verIndMap.Count; i++)
             {
-                newVerts[i] = verts[tempIndices[i]];
+                splitedVerts[i] = verts[verIndMap[i]];
             }
+
+            //3.我们要创建splitedIndices(分离出来的Indice的数组)
+            int[] splitedIndices = new int[newIndices.Count];
+            //有了verIndMap的帮助，根据newnewIndices得到对应splitedVerts的新的索引信息splitedIndices
             for (int i = 0; i < newIndices.Count; i++)
             {
-                newIndices[i] = newIndices[i] - tempIndices[0];
+                for (int j = 0; j < verIndMap.Count; j++)
+                {
+                    if (newIndices[i] == verIndMap[j])
+                        splitedIndices[i] = j;
+                }
+                    
             }
+
+            //4.算出splitedVerts中所有的点的平均值，再将verts所有值减去这个值（verts原点归零）
             Vector3 sum = Vector3.zero;
-            foreach (Vector3 item in newVerts)
-            {
+            foreach (Vector3 item in splitedVerts)
                 sum += item;
-            }
-            Vector3 avg = sum / newVerts.Length;
-            for (int i = 0; i < newVerts.Length; i++)
+
+            Vector3 avg = sum / splitedVerts.Length;
+            for (int i = 0; i < splitedVerts.Length; i++)
             {
-                newVerts[i] = newVerts[i] - avg;
+                splitedVerts[i] = splitedVerts[i] - avg;
             }
-            Debug.Log("Center" + avg);
+            if (splitedVerts.Length < 4)
+            {
+                Debug.Log("此区块只有4个点，无法形成模型,故舍弃");
+                return;
+            }
+
             Mesh newMesh = new Mesh();
-            newMesh.vertices = newVerts;
-            newMesh.triangles = newIndices.ToArray();
+            newMesh.vertices = splitedVerts;
+            newMesh.triangles = splitedIndices;
             newMesh.RecalculateNormals();
 
             GameObject newGameObject = new GameObject("newGameObject");
@@ -116,7 +137,6 @@ public class MeshSplit : MonoBehaviour {
             newGameObject.AddComponent<MeshRenderer>().material = meshRenderer.sharedMaterial;
             newGameObject.AddComponent<MeshFilter>().mesh = newMesh;
         }
-        //DestroyImmediate(meshRenderer.gameObject);
     }
     #endregion
 }
